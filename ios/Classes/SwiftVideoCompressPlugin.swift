@@ -65,13 +65,13 @@ public class SwiftVideoCompressPlugin: NSObject, FlutterPlugin {
         assetImgGenerate.appliesPreferredTrackTransform = true
         
         let timeScale = CMTimeScale(track.nominalFrameRate)
-        let time = CMTimeMakeWithSeconds(Float64(truncating: position),preferredTimescale: timeScale)
+        let time = CMTimeMakeWithSeconds(Float64(truncating: position), timeScale)
         guard let img = try? assetImgGenerate.copyCGImage(at:time, actualTime: nil) else {
             return nil
         }
         let thumbnail = UIImage(cgImage: img)
         let compressionQuality = CGFloat(0.01 * Double(truncating: quality))
-        return thumbnail.jpegData(compressionQuality: compressionQuality)
+        return UIImageJPEGRepresentation(thumbnail, compressionQuality)
     }
     
     private func getByteThumbnail(_ path: String,_ quality: NSNumber,_ position: NSNumber,_ result: FlutterResult) {
@@ -158,7 +158,7 @@ public class SwiftVideoCompressPlugin: NSObject, FlutterPlugin {
         if !isIncludeAudio {
             let compressionVideoTrack = composition.addMutableTrack(withMediaType: AVMediaType.video, preferredTrackID: kCMPersistentTrackID_Invalid)
             compressionVideoTrack!.preferredTransform = sourceVideoTrack.preferredTransform
-            try? compressionVideoTrack!.insertTimeRange(timeRange, of: sourceVideoTrack, at: CMTime.zero)
+            try? compressionVideoTrack!.insertTimeRange(timeRange, of: sourceVideoTrack, at: kCMTimeZero)
         } else {
             return sourceVideoTrack.asset!
         }
@@ -185,9 +185,9 @@ public class SwiftVideoCompressPlugin: NSObject, FlutterPlugin {
         let minDuration = Double(duration ?? videoDuration)
         let maxDurationTime = minStartTime + minDuration < videoDuration ? minDuration : videoDuration
         
-        let cmStartTime = CMTimeMakeWithSeconds(minStartTime, preferredTimescale: timescale)
-        let cmDurationTime = CMTimeMakeWithSeconds(maxDurationTime, preferredTimescale: timescale)
-        let timeRange: CMTimeRange = CMTimeRangeMake(start: cmStartTime, duration: cmDurationTime)
+        let cmStartTime = CMTimeMakeWithSeconds(minStartTime, timescale)
+        let cmDurationTime = CMTimeMakeWithSeconds(maxDurationTime, timescale)
+        let timeRange: CMTimeRange = CMTimeRangeMake(cmStartTime, cmDurationTime)
         
         let isIncludeAudio = includeAudio != nil ? includeAudio! : true
         
@@ -201,7 +201,7 @@ public class SwiftVideoCompressPlugin: NSObject, FlutterPlugin {
         
         if frameRate != nil {
             let videoComposition = AVMutableVideoComposition(propertiesOf: sourceVideoAsset)
-            videoComposition.frameDuration = CMTimeMake(value: 1, timescale: Int32(frameRate!))
+            videoComposition.frameDuration = CMTimeMake(1, Int32(frameRate!))
             exporter.videoComposition = videoComposition
         }
         
